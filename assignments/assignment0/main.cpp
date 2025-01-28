@@ -48,6 +48,8 @@ int main() {
 	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
 	ew::Model monkeyModel = ew::Model("assets/suzanne.obj");
 	GLuint brickTexture = ew::loadTexture("assets/brick_color.jpg");
+	GLuint wickerTexture = ew::loadTexture("assets/brick_color.png");
+	GLuint wickerNormal = ew::loadTexture("assets/brick_normal.png");
 
 	//Camera initialization
 	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
@@ -77,13 +79,17 @@ int main() {
 
 		//Setting the active texture to brick
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, brickTexture);
+		glBindTexture(GL_TEXTURE_2D, wickerTexture);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, wickerNormal);
 
 		//Chooses says to use shader and sets field inputs, then draws the monkey model using it. 
 		shader.use();
 		shader.setMat4("_Model", monkeyTransform.modelMatrix());
 		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
 		shader.setInt("_MainTex", 0);
+		shader.setInt("_NormalTex", 1);
 		shader.setVec3("_EyePos", camera.position);
 
 		//Set material field inputs. 
