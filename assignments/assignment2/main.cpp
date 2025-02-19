@@ -45,6 +45,7 @@ int bluriness = 5.0f;
 float gamma = 2.2f;
 
 glm::vec3 lightDir = glm::vec3(0.0f, -1.0f, -0.2f);
+float biasValue = 0.03f;
 
 unsigned int depthMap;
 
@@ -149,20 +150,21 @@ int main() {
 
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+
+		float near_plane = 0.0f, far_plane = 15.0f;
+		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+		glm::mat4 lightView = glm::lookAt(glm::vec3(0.0f, 5.0f, 0.0f),
+			lightDir,
+			glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
 		
 		{//configure shader and matrices
 			simpleDepthShader.use();
 			glClear(GL_DEPTH_BUFFER_BIT);
 			glEnable(GL_DEPTH_TEST);
 
-			float near_plane = 0.0f, far_plane = 15.0f;
-			glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-			glm::mat4 lightView = glm::lookAt(glm::vec3(0.0f, 5.0f, 0.0f),
-				lightDir,
-				glm::vec3(0.0f, 1.0f, 0.0f));
-
-			glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-			simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+			simpleDepthShader.setMat4("_LightSpaceMatrix", lightSpaceMatrix);
 		}
 
 		{//render depth
@@ -214,12 +216,12 @@ int main() {
 		glBindTexture(GL_TEXTURE_2D, brickTexture);
 		
 		shader.use();
-		//shader.setMat4("_Model", glm::mat4(1.0f));
 		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());	
 		shader.setMat4("_Model", monkeyTransform.modelMatrix());
 		shader.setInt("_MainTex", 0);
 		shader.setInt("_ShadowMap", 1);
 		shader.setVec3("_EyePos", camera.position);
+		shader.setMat4("_LightSpaceMatrix", lightSpaceMatrix);
 
 		shader.setFloat("_Material.Ka", material.Ka);
 		shader.setFloat("_Material.Kd", material.Kd);
@@ -227,6 +229,7 @@ int main() {
 		shader.setFloat("_Material.Shininess", material.Shininess);
 
 		shader.setVec3("_LightDirection", lightDir);
+		shader.setFloat("_BiasValue", biasValue);
 		monkeyModel.draw();
 		shader.setMat4("_Model", planeTransform.modelMatrix());
 		plane.draw();
@@ -296,6 +299,7 @@ void drawUI() {
 	}
 	if (ImGui::CollapsingHeader("Shadow Settings")) {
 		ImGui::SliderFloat3("Light Direction", &lightDir.x, -1.0f, 1.0f);
+		ImGui::DragFloat("Bias Value", &biasValue);
 	}
 
 	ImGui::Begin("Shadow Map");
