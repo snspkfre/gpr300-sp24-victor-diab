@@ -45,16 +45,18 @@ int bluriness = 5.0f;
 float gamma = 2.2f;
 
 glm::vec3 lightDir = glm::vec3(0.0f, -1.0f, -0.2f);
+
 unsigned int depthMap;
 
 int main() {
 	GLFWwindow* window = initWindow("Assignment 0", screenWidth, screenHeight);
+	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+
 	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
 	ew::Shader simpleDepthShader = ew::Shader("assets/simpleDepthShader.vert", "assets/simpleDepthShader.frag");
-	//ew::Shader screenShader = ew::Shader("assets/frameBufferScreen.vert", "assets/frameBufferScreen.frag");
-	ew::Model monkeyModel = ew::Model("assets/suzanne.obj");
-
 	ew::Shader postProcessShader = ew::Shader("assets/frameBufferScreen.vert", "assets/postProcessing.frag");
+
+	ew::Model monkeyModel = ew::Model("assets/suzanne.obj");
 
 	GLuint brickTexture = ew::loadTexture("assets/brick_color.jpg");
 
@@ -117,8 +119,7 @@ int main() {
 
 	glGenTextures(1, &depthMap);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-		SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -133,10 +134,8 @@ int main() {
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		printf("It's so Joever!\n");
-	}		
+	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -150,61 +149,67 @@ int main() {
 
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
 		
 		{//configure shader and matrices
-			float near_plane = 1.0f, far_plane = 7.5f;
+			simpleDepthShader.use();
+			glClear(GL_DEPTH_BUFFER_BIT);
+			glEnable(GL_DEPTH_TEST);
+
+			float near_plane = 0.0f, far_plane = 15.0f;
 			glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-			glm::mat4 lightView = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::mat4 lightView = glm::lookAt(glm::vec3(0.0f, 5.0f, 0.0f),
 				lightDir,
 				glm::vec3(0.0f, 1.0f, 0.0f));
 
 			glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-			simpleDepthShader.use();
-			simpleDepthShader.setMat4("lightSpaceMatrix", camera.projectionMatrix() * camera.viewMatrix());
+			simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		}
 
 		{//render depth
-			shader.setMat4("_Model", monkeyTransform.modelMatrix());
+			simpleDepthShader.setMat4("_Model", monkeyTransform.modelMatrix());
 			monkeyModel.draw();
-			shader.setMat4("_Model", planeTransform.modelMatrix());
+			simpleDepthShader.setMat4("_Model", planeTransform.modelMatrix());
 			plane.draw();
 		}
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		// 2. then render scene as normal with shadow mapping (using depth map)
-		glViewport(0, 0, screenWidth, screenHeight);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		{
-			shader.use();
-			//shader.setMat4("_Model", glm::mat4(1.0f));
-			shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
-			shader.setInt("_MainTex", 0);
-			shader.setVec3("_EyePos", camera.position);
+		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		//// 2. then render scene as normal with shadow mapping (using depth map)
+		//glViewport(0, 0, screenWidth, screenHeight);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		//
+		//{
+		//	shader.use();
+		//	//shader.setMat4("_Model", glm::mat4(1.0f));
+		//	shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
+		//	shader.setInt("_MainTex", 0);
+		//	shader.setVec3("_EyePos", camera.position);
 
-			shader.setFloat("_Material.Ka", material.Ka);
-			shader.setFloat("_Material.Kd", material.Kd);
-			shader.setFloat("_Material.Ks", material.Ks);
-			shader.setFloat("_Material.Shininess", material.Shininess);
+		//	shader.setFloat("_Material.Ka", material.Ka);
+		//	shader.setFloat("_Material.Kd", material.Kd);
+		//	shader.setFloat("_Material.Ks", material.Ks);
+		//	shader.setFloat("_Material.Shininess", material.Shininess);
 
-			shader.setVec3("_LightDirection", lightDir);
-		}
+		//	shader.setVec3("_LightDirection", lightDir);
+		//}
 
-		glBindTexture(GL_TEXTURE_2D, depthMap);
-		{
-			shader.setMat4("_Model", monkeyTransform.modelMatrix());
-			monkeyModel.draw();
-			shader.setMat4("_Model", planeTransform.modelMatrix());
-			plane.draw();
-		}
+		//glBindTexture(GL_TEXTURE_2D, depthMap);
+		//{
+		//	shader.setMat4("_Model", monkeyTransform.modelMatrix());
+		//	monkeyModel.draw();
+		//	shader.setMat4("_Model", planeTransform.modelMatrix());
+		//	plane.draw();
+		//}
 
 		// First Pass
+		glViewport(0, 0, screenWidth, screenHeight);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.6f,0.8f,0.92f,1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, brickTexture);
 		
@@ -213,6 +218,7 @@ int main() {
 		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());	
 		shader.setMat4("_Model", monkeyTransform.modelMatrix());
 		shader.setInt("_MainTex", 0);
+		shader.setInt("_ShadowMap", 1);
 		shader.setVec3("_EyePos", camera.position);
 
 		shader.setFloat("_Material.Ka", material.Ka);
@@ -290,7 +296,6 @@ void drawUI() {
 	}
 	if (ImGui::CollapsingHeader("Shadow Settings")) {
 		ImGui::SliderFloat3("Light Direction", &lightDir.x, -1.0f, 1.0f);
-		
 	}
 
 	ImGui::Begin("Shadow Map");
