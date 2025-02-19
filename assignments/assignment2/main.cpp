@@ -66,7 +66,7 @@ int main() {
 	camera.aspectRatio = (float)screenWidth / screenHeight;
 	camera.fov = 60.0f;
 
-	ew::MeshData planeMeshData = ew::createPlane(10.0f, 10.0f, 1);
+	ew::MeshData planeMeshData = ew::createPlane(30.0f, 30.0f, 1);
 	ew::Mesh plane(planeMeshData);
 	ew::Transform planeTransform;
 	planeTransform.position = glm::vec3(0.0f, -5.0f, 0.0f);
@@ -164,6 +164,9 @@ int main() {
 			glClear(GL_DEPTH_BUFFER_BIT);
 			glEnable(GL_DEPTH_TEST);
 
+			glEnable(GL_CULL_FACE);//to avoid peter panning
+			glCullFace(GL_FRONT);
+
 			simpleDepthShader.setMat4("_LightSpaceMatrix", lightSpaceMatrix);
 		}
 
@@ -174,33 +177,7 @@ int main() {
 			plane.draw();
 		}
 		
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		//// 2. then render scene as normal with shadow mapping (using depth map)
-		//glViewport(0, 0, screenWidth, screenHeight);
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		//
-		//{
-		//	shader.use();
-		//	//shader.setMat4("_Model", glm::mat4(1.0f));
-		//	shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
-		//	shader.setInt("_MainTex", 0);
-		//	shader.setVec3("_EyePos", camera.position);
-
-		//	shader.setFloat("_Material.Ka", material.Ka);
-		//	shader.setFloat("_Material.Kd", material.Kd);
-		//	shader.setFloat("_Material.Ks", material.Ks);
-		//	shader.setFloat("_Material.Shininess", material.Shininess);
-
-		//	shader.setVec3("_LightDirection", lightDir);
-		//}
-
-		//glBindTexture(GL_TEXTURE_2D, depthMap);
-		//{
-		//	shader.setMat4("_Model", monkeyTransform.modelMatrix());
-		//	monkeyModel.draw();
-		//	shader.setMat4("_Model", planeTransform.modelMatrix());
-		//	plane.draw();
-		//}
+		glCullFace(GL_BACK);
 
 		// First Pass
 		glViewport(0, 0, screenWidth, screenHeight);
@@ -299,7 +276,7 @@ void drawUI() {
 	}
 	if (ImGui::CollapsingHeader("Shadow Settings")) {
 		ImGui::SliderFloat3("Light Direction", &lightDir.x, -1.0f, 1.0f);
-		ImGui::DragFloat("Bias Value", &biasValue);
+		ImGui::SliderFloat("Bias Value", &biasValue, 0.0f, 0.5f);
 	}
 
 	ImGui::Begin("Shadow Map");

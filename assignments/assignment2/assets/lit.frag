@@ -26,11 +26,22 @@ uniform Material _Material;
 float ShadowCalculation(vec4 lightSpacePos)
 {
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
-    projCoords = projCoords * 0.5 + 0.5; 
-	float closestDepth = texture(_ShadowMap, projCoords.xy).r;
+    projCoords = projCoords * 0.5 + 0.5;
 	float currentDepth = projCoords.z;
 	float bias = max(_BiasValue * (1.0 - dot(fs_in.WorldNormal, _LightDirection)), _BiasValue);
-	float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+
+	float shadow = 0.0;
+	vec2 texelSize = 1.0 / textureSize(_ShadowMap, 0);
+	for(int x = -1; x <= 1; ++x)
+	{
+		for(int y = -1; y <= 1; ++y)
+		{
+			float pcfDepth = texture(_ShadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+			shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
+		}    
+	}
+	shadow /= 9.0;
+
 	return shadow;
 }
 
