@@ -10,14 +10,18 @@
 #include <ew/texture.h>
 #include <ew/procGen.h>
 
+#include <vd/animation.h>
+
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 GLFWwindow* initWindow(const char* title, int width, int height);
 void drawUI();
+void animationControls();
 
 
 //Global state
@@ -29,6 +33,8 @@ float deltaTime;
 ew::Transform monkeyTransform;
 ew::Camera camera;
 ew::CameraController cameraController;
+
+vd::Animator animator;
 
 struct Material
 {
@@ -70,6 +76,16 @@ int main() {
 	ew::Mesh plane(planeMeshData);
 	ew::Transform planeTransform;
 	planeTransform.position = glm::vec3(0.0f, -5.0f, 0.0f);
+
+	
+	animator.clip = new vd::AnimationClip();
+	animator.clip->duration = 5.0f;
+
+	animator.clip->positionKeys.push_back(vd::KeyFrame<glm::vec3>(0, glm::vec3(0.0f, 0.0f, 0.0f)));
+	animator.clip->positionKeys.push_back(vd::KeyFrame<glm::vec3>(5, glm::vec3(5.0f, 0.0f, 0.0f)));
+
+	animator.isPlaying = true;
+	animator.isLooping = true;
 
 	float quadVertices[] = {
 		-1.0f,  1.0f,  0.0f, 1.0f,
@@ -145,7 +161,12 @@ int main() {
 		deltaTime = time - prevFrameTime;
 		prevFrameTime = time;
 
-		monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
+		//monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
+		animator.Update(deltaTime);
+		monkeyTransform.position = animator.GetValue(animator.clip->positionKeys, glm::vec3(0.0f, 0.0f, 0.0f));
+		monkeyTransform.rotation = animator.GetValue(animator.clip->rotationKeys, glm::vec3(0.0f, 0.0f, 0.0f)) / 180.0f * 3.14159265358979323846f;
+		monkeyTransform.scale = animator.GetValue(animator.clip->scaleKeys, glm::vec3(1.0f));
+
 		cameraController.move(window, &camera, deltaTime);
 
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
@@ -237,9 +258,10 @@ int main() {
 		postProcessShader.setFloat("gamma", gamma);
 
 		glBindVertexArray(quadVAO);
+		glBindVertexArray(quadVAO);
 		glDisable(GL_DEPTH_TEST);
 		glBindTexture(GL_TEXTURE_2D, texture);
-		glDrawArrays(GL_TRIANGLES, 0, 6);		
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 		
 
 		drawUI();
@@ -293,7 +315,7 @@ void drawUI() {
 		ImGui::SliderFloat("Bias Value", &biasValue, 0.0f, 0.5f);
 	}
 
-	ImGui::Begin("Shadow Map");
+	/*ImGui::Begin("Shadow Map");
 		//Using a Child allow to fill all the space of the window.
 		ImGui::BeginChild("Shadow Map");
 		//Stretch image to be window size
@@ -302,12 +324,81 @@ void drawUI() {
 		//shadowMap is the texture2D handle
 		ImGui::Image((ImTextureID)depthMap, windowSize, ImVec2(0, 1), ImVec2(1, 0));
 		ImGui::EndChild();
-	ImGui::End();
+	ImGui::End();*/
 
 	ImGui::End();
+
+	animationControls();
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void animationControls()
+{
+	ImGui::Begin("Animation Controls");
+	{
+		ImGui::Checkbox("Playing", &animator.isPlaying);
+		ImGui::Checkbox("Looping", &animator.isLooping);
+		ImGui::DragFloat("Playback Speed", &animator.playbackSpeed);
+		ImGui::SliderFloat("Playback Time", &animator.playbackTime, 0.0f, animator.clip->duration);
+		ImGui::DragFloat("Playback Duration", &animator.clip->duration);
+
+		if (ImGui::CollapsingHeader("Position Keys")) {
+			for (int i = 0; i < animator.clip->positionKeys.size(); i++)
+			{
+				ImGui::DragFloat(("Time " + std::to_string(i+1)).c_str(), &animator.clip->positionKeys[i].time);
+				ImGui::DragFloat3(("Value " + std::to_string(i + 1)).c_str(), &animator.clip->positionKeys[i].value.x);
+			}
+
+			if (ImGui::Button("Add Keyframe"))
+			{
+				if(animator.clip->positionKeys.size() == 0)
+					animator.clip->positionKeys.push_back(vd::KeyFrame<glm::vec3>(0, glm::vec3(0.0f, 0.0f, 0.0f)));
+				else
+					animator.clip->positionKeys.push_back(vd::KeyFrame<glm::vec3>(animator.clip->duration, animator.clip->positionKeys[animator.clip->positionKeys.size() - 1].value));
+			}
+			if (ImGui::Button("Remove Keyframe") && animator.clip->positionKeys.size() >= 1)
+				animator.clip->positionKeys.pop_back();
+		}
+
+		if (ImGui::CollapsingHeader("Rotation Keys")) {
+			for (int i = 0; i < animator.clip->rotationKeys.size(); i++)
+			{
+				ImGui::DragFloat(("Time " + std::to_string(i + 1)).c_str(), &animator.clip->rotationKeys[i].time);
+				ImGui::DragFloat3(("Value " + std::to_string(i + 1)).c_str(), &animator.clip->rotationKeys[i].value.x);
+			}
+
+			if (ImGui::Button("Add Keyframe"))
+			{
+				if (animator.clip->rotationKeys.size() == 0)
+					animator.clip->rotationKeys.push_back(vd::KeyFrame<glm::vec3>(0, glm::vec3(0.0f, 0.0f, 0.0f)));
+				else
+					animator.clip->rotationKeys.push_back(vd::KeyFrame<glm::vec3>(animator.clip->duration, animator.clip->rotationKeys[animator.clip->rotationKeys.size() - 1].value));
+			}
+			if (ImGui::Button("Remove Keyframe") && animator.clip->rotationKeys.size() >= 1)
+				animator.clip->rotationKeys.pop_back();
+		}
+
+		if (ImGui::CollapsingHeader("Scale Keys")) {
+			for (int i = 0; i < animator.clip->scaleKeys.size(); i++)
+			{
+				ImGui::DragFloat(("Time " + std::to_string(i + 1)).c_str(), &animator.clip->scaleKeys[i].time);
+				ImGui::DragFloat3(("Value " + std::to_string(i + 1)).c_str(), &animator.clip->scaleKeys[i].value.x);
+			}
+
+			if (ImGui::Button("Add Keyframe"))
+			{
+				if (animator.clip->scaleKeys.size() == 0)
+					animator.clip->scaleKeys.push_back(vd::KeyFrame<glm::vec3>(0, glm::vec3(1.0f, 1.0f, 1.0f)));
+				else
+					animator.clip->scaleKeys.push_back(vd::KeyFrame<glm::vec3>(animator.clip->duration, animator.clip->scaleKeys[animator.clip->scaleKeys.size() - 1].value));
+			}
+			if (ImGui::Button("Remove Keyframe") && animator.clip->scaleKeys.size() >= 1)
+				animator.clip->scaleKeys.pop_back();
+		}
+	}
+	ImGui::End();
 }
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height)
