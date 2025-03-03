@@ -344,58 +344,84 @@ void animationControls()
 		ImGui::SliderFloat("Playback Time", &animator.playbackTime, 0.0f, animator.clip->duration);
 		ImGui::DragFloat("Playback Duration", &animator.clip->duration);
 
+		int pushID = 0;
+
 		if (ImGui::CollapsingHeader("Position Keys")) {
 			for (int i = 0; i < animator.clip->positionKeys.size(); i++)
 			{
-				ImGui::DragFloat(("Time " + std::to_string(i+1)).c_str(), &animator.clip->positionKeys[i].time);
-				ImGui::DragFloat3(("Value " + std::to_string(i + 1)).c_str(), &animator.clip->positionKeys[i].value.x);
+				ImGui::PushID(pushID++);
+				{
+					ImGui::DragFloat("Time", &animator.clip->positionKeys[i].time);
+					ImGui::DragFloat3("Value", &animator.clip->positionKeys[i].value.x);
+				}
+				ImGui::PopID();
 			}
 
-			if (ImGui::Button("Add Keyframe"))
+			ImGui::PushID(pushID++);
 			{
-				if(animator.clip->positionKeys.size() == 0)
-					animator.clip->positionKeys.push_back(vd::KeyFrame<glm::vec3>(0, glm::vec3(0.0f, 0.0f, 0.0f)));
-				else
-					animator.clip->positionKeys.push_back(vd::KeyFrame<glm::vec3>(animator.clip->duration, animator.clip->positionKeys[animator.clip->positionKeys.size() - 1].value));
+				if (ImGui::Button("Add Keyframe"))
+				{
+					if (animator.clip->positionKeys.size() == 0)
+						animator.clip->positionKeys.push_back(vd::KeyFrame<glm::vec3>(0, glm::vec3(0.0f, 0.0f, 0.0f)));
+					else
+						animator.clip->positionKeys.push_back(vd::KeyFrame<glm::vec3>(animator.clip->duration, animator.clip->positionKeys[animator.clip->positionKeys.size() - 1].value));
+				}
+				if (ImGui::Button("Remove Keyframe") && animator.clip->positionKeys.size() >= 1)
+					animator.clip->positionKeys.pop_back();
 			}
-			if (ImGui::Button("Remove Keyframe") && animator.clip->positionKeys.size() >= 1)
-				animator.clip->positionKeys.pop_back();
+			ImGui::PopID();
 		}
 
 		if (ImGui::CollapsingHeader("Rotation Keys")) {
 			for (int i = 0; i < animator.clip->rotationKeys.size(); i++)
 			{
-				ImGui::DragFloat(("Time " + std::to_string(i + 1)).c_str(), &animator.clip->rotationKeys[i].time);
-				ImGui::DragFloat3(("Value " + std::to_string(i + 1)).c_str(), &animator.clip->rotationKeys[i].value.x);
+				ImGui::PushID(pushID++);
+				{
+					ImGui::DragFloat("Time", &animator.clip->rotationKeys[i].time);
+					ImGui::DragFloat3("Value", &animator.clip->rotationKeys[i].value.x);
+				}
+				ImGui::PopID();
 			}
 
-			if (ImGui::Button("Add Keyframe"))
+			ImGui::PushID(pushID++);
 			{
-				if (animator.clip->rotationKeys.size() == 0)
-					animator.clip->rotationKeys.push_back(vd::KeyFrame<glm::vec3>(0, glm::vec3(0.0f, 0.0f, 0.0f)));
-				else
-					animator.clip->rotationKeys.push_back(vd::KeyFrame<glm::vec3>(animator.clip->duration, animator.clip->rotationKeys[animator.clip->rotationKeys.size() - 1].value));
+				if (ImGui::Button("Add Keyframe"))
+				{
+					if (animator.clip->rotationKeys.size() == 0)
+						animator.clip->rotationKeys.push_back(vd::KeyFrame<glm::vec3>(0, glm::vec3(0.0f, 0.0f, 0.0f)));
+					else
+						animator.clip->rotationKeys.push_back(vd::KeyFrame<glm::vec3>(animator.clip->duration, animator.clip->rotationKeys[animator.clip->rotationKeys.size() - 1].value));
+				}
+				if (ImGui::Button("Remove Keyframe") && animator.clip->rotationKeys.size() >= 1)
+					animator.clip->rotationKeys.pop_back();
 			}
-			if (ImGui::Button("Remove Keyframe") && animator.clip->rotationKeys.size() >= 1)
-				animator.clip->rotationKeys.pop_back();
+			ImGui::PopID();
 		}
 
 		if (ImGui::CollapsingHeader("Scale Keys")) {
 			for (int i = 0; i < animator.clip->scaleKeys.size(); i++)
 			{
-				ImGui::DragFloat(("Time " + std::to_string(i + 1)).c_str(), &animator.clip->scaleKeys[i].time);
-				ImGui::DragFloat3(("Value " + std::to_string(i + 1)).c_str(), &animator.clip->scaleKeys[i].value.x);
+				ImGui::PushID(pushID++);
+				{
+					ImGui::DragFloat("Time", &animator.clip->scaleKeys[i].time);
+					ImGui::DragFloat3("Value", &animator.clip->scaleKeys[i].value.x);
+				}
+				ImGui::PopID();
 			}
 
-			if (ImGui::Button("Add Keyframe"))
+			ImGui::PushID(pushID++);
 			{
-				if (animator.clip->scaleKeys.size() == 0)
-					animator.clip->scaleKeys.push_back(vd::KeyFrame<glm::vec3>(0, glm::vec3(1.0f, 1.0f, 1.0f)));
-				else
-					animator.clip->scaleKeys.push_back(vd::KeyFrame<glm::vec3>(animator.clip->duration, animator.clip->scaleKeys[animator.clip->scaleKeys.size() - 1].value));
+				if (ImGui::Button("Add Keyframe"))
+				{
+					if (animator.clip->scaleKeys.size() == 0)
+						animator.clip->scaleKeys.push_back(vd::KeyFrame<glm::vec3>(0, glm::vec3(1.0f, 1.0f, 1.0f)));
+					else
+						animator.clip->scaleKeys.push_back(vd::KeyFrame<glm::vec3>(animator.clip->duration, animator.clip->scaleKeys[animator.clip->scaleKeys.size() - 1].value));
+				}
+				if (ImGui::Button("Remove Keyframe") && animator.clip->scaleKeys.size() >= 1)
+					animator.clip->scaleKeys.pop_back();
 			}
-			if (ImGui::Button("Remove Keyframe") && animator.clip->scaleKeys.size() >= 1)
-				animator.clip->scaleKeys.pop_back();
+			ImGui::PopID();
 		}
 	}
 	ImGui::End();
