@@ -336,6 +336,13 @@ void drawUI() {
 
 void animationControls()
 {
+	const char* itemNames[4] = {
+	  "Linear",
+	  "Cubic",
+	  "Cosine",
+	  "Exponential"
+	};
+
 	ImGui::Begin("Animation Controls");
 	{
 		ImGui::Checkbox("Playing", &animator.isPlaying);
@@ -351,8 +358,10 @@ void animationControls()
 			{
 				ImGui::PushID(pushID++);
 				{
+					int curItem = 1;
 					ImGui::DragFloat("Time", &animator.clip->positionKeys[i].time);
 					ImGui::DragFloat3("Value", &animator.clip->positionKeys[i].value.x);
+					ImGui::Combo("Interpolation Method", &animator.clip->positionKeys[i].method, itemNames, 4);
 				}
 				ImGui::PopID();
 			}
@@ -379,6 +388,7 @@ void animationControls()
 				{
 					ImGui::DragFloat("Time", &animator.clip->rotationKeys[i].time);
 					ImGui::DragFloat3("Value", &animator.clip->rotationKeys[i].value.x);
+					ImGui::Combo("Interpolation Method", &animator.clip->positionKeys[i].method, itemNames, 4);
 				}
 				ImGui::PopID();
 			}
@@ -405,6 +415,7 @@ void animationControls()
 				{
 					ImGui::DragFloat("Time", &animator.clip->scaleKeys[i].time);
 					ImGui::DragFloat3("Value", &animator.clip->scaleKeys[i].value.x);
+					ImGui::Combo("Interpolation Method", &animator.clip->positionKeys[i].method, itemNames, 4);
 				}
 				ImGui::PopID();
 			}

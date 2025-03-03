@@ -2,6 +2,7 @@
 #include <imgui.h>
 #include <algorithm>
 #include <vector>
+#include "interpolation.h"
 
 namespace vd
 {
@@ -11,16 +12,26 @@ namespace vd
 	public:
 		float time; //Should be between 0 and animation clip maxTime
 		T value;
+		int method;
 
+		KeyFrame(float time, T value, int method)
+		{
+			this->time = time;
+			this->value = value;
+			this->method = method;
+		}
+		
 		KeyFrame(float time, T value)
 		{
 			this->time = time;
 			this->value = value;
+			method = 0;
 		}
 
 		KeyFrame()
 		{
 			time = 0;
+			method = 0;
 		}
 	};
 
@@ -76,10 +87,10 @@ namespace vd
 				}
 			}
 			
-			return Lerp(prev.value, next.value, InvLerp(prev.time, next.time, playbackTime));
+			return vd::PickInterpolation(prev.value, next.value, vd::InvLerp(prev.time, next.time, playbackTime), vd::IntMethod(prev.method));
 		}
 
-		template<typename T>
+		/*template<typename T>
 		T Lerp(T a, T b, float t)
 		{
 			return (1.0f - t) * a + t * b;
@@ -89,6 +100,6 @@ namespace vd
 		T InvLerp(T a, T b, T t)
 		{
 			return (t - a) / (b - a);
-		}
+		}*/
 	};
 }
