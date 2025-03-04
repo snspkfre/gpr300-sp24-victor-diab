@@ -388,7 +388,7 @@ void animationControls()
 				{
 					ImGui::DragFloat("Time", &animator.clip->rotationKeys[i].time);
 					ImGui::DragFloat3("Value", &animator.clip->rotationKeys[i].value.x);
-					ImGui::Combo("Interpolation Method", &animator.clip->positionKeys[i].method, itemNames, 4);
+					ImGui::Combo("Interpolation Method", &animator.clip->rotationKeys[i].method, itemNames, 4);
 				}
 				ImGui::PopID();
 			}
@@ -415,7 +415,7 @@ void animationControls()
 				{
 					ImGui::DragFloat("Time", &animator.clip->scaleKeys[i].time);
 					ImGui::DragFloat3("Value", &animator.clip->scaleKeys[i].value.x);
-					ImGui::Combo("Interpolation Method", &animator.clip->positionKeys[i].method, itemNames, 4);
+					ImGui::Combo("Interpolation Method", &animator.clip->scaleKeys[i].method, itemNames, 4);
 				}
 				ImGui::PopID();
 			}
